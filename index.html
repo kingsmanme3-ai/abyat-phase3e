@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>أسوار بلس العقارية</title>
+  <meta name="theme-color" content="#1a3e5f">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <!-- احتياطي: إن لم تُنزَّل ملفات الخط محلياً يُحمَّل Tajawal من Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="/style.css?v=0.3.4">
+</head>
+<body>
+
+<section id="login" class="hidden">
+  <div class="login-wrap">
+  <img class="login-logo" src="/img/logo-full.png" alt="ASWAR+ شركة أسوار بلس العقارية">
+  <form id="loginForm" class="card login-card" autocomplete="on">
+    <p class="login-sub">الحصر والإشغال اللحظي</p>
+    <label>اسم المستخدم<input id="lUser" name="username" autocomplete="username" required></label>
+    <label>كلمة المرور<input id="lPass" name="password" type="password" autocomplete="current-password" required></label>
+    <p id="loginErr" class="err"></p>
+    <button class="btn primary" type="submit">دخول</button>
+  </form>
+  </div>
+</section>
+
+<div id="app" class="hidden">
+  <header>
+    <div class="brand"><img src="/img/logo-header.png" alt="ASWAR+ شركة أسوار بلس العقارية"></div>
+    <div class="head-left">
+      <span id="live" class="live off" title="التحديث اللحظي">● غير متصل</span>
+      <span id="userLabel" class="muted"></span>
+      <button id="pwBtn" class="btn small">كلمة المرور</button>
+      <button id="logoutBtn" class="btn small">خروج</button>
+    </div>
+  </header>
+  <nav>
+    <button data-view="dashboard" id="navDash" class="active">لوحة الإشغال</button>
+    <button data-view="tasks" id="navTasks">المهام</button>
+    <button data-view="units">تحديث الوحدات</button>
+    <button data-view="reports">التقارير</button>
+    <button data-view="admin" id="navAdmin" class="hidden">الإدارة</button>
+  </nav>
+
+  <main>
+    <!-- لوحة الإشغال -->
+    <section id="view-dashboard">
+      <div class="toolbar">
+        <select id="siteFilter" aria-label="الموقع"></select>
+        <span class="muted" id="updated"></span>
+      </div>
+      <div id="kpis" class="kpis"></div>
+      <div class="grid2">
+        <div class="card"><h2>توزيع الحالات</h2>
+          <div class="donut-wrap"><div class="chartbox donut"><canvas id="cDonut"></canvas></div><div id="donutLegend" class="donut-legend"></div></div></div>
+        <div class="card"><h2>تطور الإشغال (آخر 30 يوماً)</h2><div class="chartbox"><canvas id="cArea"></canvas></div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h2>العقود المؤجرة حسب تاريخ الانتهاء</h2><div class="chartbox"><canvas id="cContracts"></canvas></div></div>
+        <div class="card"><h2>عقود تنتهي خلال 90 يوماً</h2><div id="expiring" class="scroll"></div></div>
+      </div>
+      <div class="card"><h2>المواقع</h2><div id="sitesTable" class="scroll"></div></div>
+    </section>
+
+    <!-- المهام (3هـ) -->
+    <section id="view-tasks" class="hidden">
+      <div class="toolbar">
+        <select id="tkStatus" aria-label="الحالة"><option value="open">المفتوحة</option><option value="done">المنجزة</option><option value="all">الكل</option></select>
+        <span id="tkInfo" class="muted"></span>
+        <button class="btn primary hidden" id="tkNew" type="button">+ إسناد مهمة</button>
+      </div>
+      <div id="tkList" class="tasks"></div>
+    </section>
+
+    <!-- تحديث الوحدات -->
+    <section id="view-units" class="hidden">
+      <div class="toolbar">
+        <select id="unitSite" aria-label="الموقع"></select>
+        <span id="siteInfo" class="muted"></span>
+      </div>
+      <div id="chips" class="chips"></div>
+      <div id="buildings"></div>
+    </section>
+
+
+    <!-- التقارير (المرحلة 3) -->
+    <section id="view-reports" class="hidden">
+      <div class="card">
+        <h2>بطاقات التقارير</h2>
+        <div id="cardGrid" class="cards"></div>
+      </div>
+
+      <!-- سجلات التقارير ومكتبة الوسائط (3ب/3ج) -->
+      <div id="authPanel" class="hidden">
+        <div class="card">
+          <h2 id="apTitle"></h2>
+          <p id="apDesc" class="muted"></p>
+          <div id="apTabs" class="tabs hidden">
+            <button type="button" data-tab="log" class="on">سجل التقارير</button>
+            <button type="button" data-tab="lib">🖼️ مكتبة الوسائط</button>
+          </div>
+
+          <div id="apLog">
+            <div class="filters">
+              <input id="fQ" type="search" placeholder="بحث في العنوان والمتن…" aria-label="بحث">
+              <input id="fSerial" placeholder="الرقم المسلسل" inputmode="text" aria-label="الرقم المسلسل">
+              <select id="fCat" aria-label="النوع"></select>
+              <select id="fAuthor" aria-label="الكاتب"></select>
+              <select id="fSite" aria-label="الموقع"></select>
+              <select id="fDept" aria-label="القطاع / الإدارة"></select>
+              <select id="fPrio" aria-label="الأولوية"></select>
+              <select id="apStatus" aria-label="الحالة">
+                <option value="">كل الحالات</option>
+                <option value="draft">مسودة</option>
+                <option value="submitted">مرسل</option>
+                <option value="reviewed">مُطّلع عليه</option>
+              </select>
+              <label>من تاريخ<input id="fFrom" type="date"></label>
+              <label>إلى تاريخ<input id="fTo" type="date"></label>
+            </div>
+            <div class="toolbar">
+              <label class="inline"><input type="checkbox" id="apMine"> تقاريري فقط</label>
+              <button class="btn small" id="fReset" type="button">مسح الفلاتر</button>
+              <button class="btn primary" id="apNew" type="button">+ تقرير جديد</button>
+              <span id="apInfo" class="muted"></span>
+            </div>
+            <div id="apList" class="scroll"></div>
+            <div class="pager"><button class="btn small" id="apPrev" type="button">السابق</button><span id="apPage" class="muted"></span><button class="btn small" id="apNext" type="button">التالي</button></div>
+            <p class="muted">اضغط على تقرير مرسل لفتح ملف PDF القياسي. المسودة تُفتح للتعديل.</p>
+          </div>
+
+          <div id="apLib" class="hidden">
+            <div id="libChips" class="chips"></div>
+            <div class="toolbar">
+              <select id="libKind" aria-label="النوع"><option value="">صور وفيديو</option><option value="image">صور فقط</option><option value="video">فيديو فقط</option></select>
+              <input id="libQ" type="search" placeholder="بحث في الوصف…" aria-label="بحث">
+              <label class="inline"><input type="checkbox" id="libMine"> ملفاتي</label>
+              <button class="btn primary" id="libUp" type="button">+ رفع صورة / فيديو</button>
+              <span id="libInfo" class="muted"></span>
+            </div>
+            <div id="libGrid" class="mgrid"></div>
+            <div class="pager"><button class="btn small" id="libPrev" type="button">السابق</button><span id="libPage" class="muted"></span><button class="btn small" id="libNext" type="button">التالي</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- تقارير البيانات التلقائية (3أ) -->
+      <div id="dataPanel">
+      <div class="card">
+        <h2>التقارير</h2>
+        <div id="reportTypes" class="chips hidden"></div>
+        <p id="rDesc" class="muted"></p>
+        <div class="toolbar">
+          <select id="rSite" aria-label="الموقع"></select>
+          <select id="rStatus" class="hidden" aria-label="الحالة"></select>
+          <select id="rDays" class="hidden" aria-label="نافذة الانتهاء">
+            <option value="">كل العقود</option>
+            <option value="0">المنتهية فقط</option>
+            <option value="30">المنتهية وخلال 30 يوماً</option>
+            <option value="60">المنتهية وخلال 60 يوماً</option>
+            <option value="90">المنتهية وخلال 90 يوماً</option>
+          </select>
+          <button class="btn primary" id="rXlsx">تصدير Excel</button>
+          <button class="btn" id="rCsv">CSV</button>
+          <button class="btn" id="rPrint">طباعة</button>
+        </div>
+        <p id="rInfo" class="muted"></p>
+        <div id="rTable" class="scroll"></div>
+        <p class="muted" id="rUpcoming"></p>
+      </div>
+
+      <div id="schedBox" class="hidden">
+        <div class="card">
+          <h2 id="schTitle">جدولة التقارير</h2>
+          <p id="schMail" class="muted"></p>
+          <form id="schForm" class="stack">
+            <input type="hidden" id="schId">
+            <div class="row">
+              <input id="schName" placeholder="اسم الجدولة (مثال: تقرير العقود الأسبوعي)" required maxlength="120">
+              <select id="schType"></select>
+              <select id="schSite"></select>
+            </div>
+            <div class="row">
+              <select id="schStatus" class="hidden"></select>
+              <select id="schDays" class="hidden">
+                <option value="">كل العقود</option>
+                <option value="0">المنتهية فقط</option>
+                <option value="30">المنتهية وخلال 30 يوماً</option>
+                <option value="60">المنتهية وخلال 60 يوماً</option>
+                <option value="90">المنتهية وخلال 90 يوماً</option>
+              </select>
+              <select id="schFmt"><option value="xlsx">Excel</option><option value="csv">CSV</option></select>
+            </div>
+            <div class="row">
+              <select id="schFreq">
+                <option value="daily">يومياً</option>
+                <option value="weekly">أسبوعياً</option>
+                <option value="monthly">شهرياً</option>
+              </select>
+              <select id="schWeekday" class="hidden"></select>
+              <input id="schDom" type="number" min="1" max="28" value="1" class="hidden" title="يوم الشهر (1 إلى 28)">
+              <input id="schHour" type="number" min="0" max="23" value="8" title="الساعة (0 إلى 23) بالتوقيت المحلي">
+            </div>
+            <input id="schRecipients" placeholder="بريد المستلمين (اختياري) مفصولاً بفواصل" autocomplete="off">
+            <p id="schErr" class="err"></p>
+            <div class="row">
+              <button class="btn primary" id="schSave">حفظ الجدولة</button>
+              <button type="button" class="btn" id="schCancel">جديدة</button>
+            </div>
+          </form>
+          <div id="schList" class="scroll"></div>
+        </div>
+        <div class="card">
+          <h2>آخر التقارير المولّدة</h2>
+          <div id="runList" class="scroll"></div>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- الإدارة -->
+    <section id="view-admin" class="hidden">
+      <div class="grid2">
+        <div class="card">
+          <h2>إضافة موقع</h2>
+          <form id="siteForm" class="row">
+            <input id="siteName" placeholder="اسم الموقع" required>
+            <button class="btn primary">إضافة</button>
+          </form>
+          <div id="siteList" class="list"></div>
+        </div>
+        <div class="card">
+          <h2>إضافة عمارة ووحداتها</h2>
+          <form id="bldForm" class="stack">
+            <select id="bSite" required></select>
+            <input id="bName" placeholder="اسم العمارة" required>
+            <div class="row">
+              <input id="bCount" type="number" min="0" max="500" value="10" title="عدد الوحدات">
+              <input id="bFirst" type="number" min="0" value="1" title="رقم أول وحدة">
+              <input id="bPrefix" placeholder="بادئة (اختياري)" maxlength="10">
+            </div>
+            <button class="btn primary">إنشاء</button>
+          </form>
+          <p class="muted">تُنشأ الوحدات بحالة «متاحة» بأرقام متسلسلة.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h2>مصفوفة صلاحيات المستويات الوظيفية</h2>
+        <div id="lvMatrix" class="scroll"></div>
+        <p class="muted">المدير العام ومدير الإدارة يملكان كل الصلاحيات دائماً. العامل والفني نطاقهما الافتراضي «المهام المسندة إليه فقط»، ويعدّله المدير لكل مستخدم من نموذج المستخدمين أدناه.</p>
+        <p id="lvErr" class="err"></p>
+        <button class="btn primary hidden" id="lvSave" type="button">حفظ المصفوفة</button>
+      </div>
+      <div class="card">
+        <h2>صلاحيات بطاقات التقارير</h2>
+        <div class="toolbar"><select id="pmCat" aria-label="البطاقة"></select></div>
+        <div id="pmTable" class="scroll"></div>
+        <p class="muted">الكتابة تتضمن القراءة. المدير يملك كل الصلاحيات دائماً. القالب والحقول وصلاحيات المستخدمين الفرديين تُدار عبر API الآن وتُضاف لها لوحة CP في المرحلة 3هـ.</p>
+        <p id="pmErr" class="err"></p>
+        <button class="btn primary" id="pmSave">حفظ الصلاحيات</button>
+      </div>
+      <div class="card">
+        <h2>تصنيفات مكتبة الوسائط</h2>
+        <form id="mcForm" class="row">
+          <input id="mcName" placeholder="اسم تصنيف جديد (مثال: الكهرباء)" required maxlength="80">
+          <input id="mcColor" type="color" value="#0f766e" title="اللون" style="flex:0 0 56px;padding:2px">
+          <button class="btn primary">إضافة</button>
+        </form>
+        <div id="mcList" class="scroll"></div>
+        <h2 style="margin-top:14px">البطاقات التي يظهر فيها تبويب المكتبة</h2>
+        <div id="mcCards" class="chips"></div>
+        <p id="mcErr" class="err"></p>
+        <button class="btn primary" id="mcCardsSave" type="button">حفظ البطاقات</button>
+      </div>
+      <div class="card">
+        <h2 id="userFormTitle">المستخدمون</h2>
+        <form id="userForm" class="stack">
+          <input type="hidden" id="uId">
+          <div class="row">
+            <input id="uName" placeholder="اسم المستخدم (إنجليزي)" required minlength="3" pattern="[A-Za-z0-9_.\-]+" autocomplete="off">
+            <input id="uFull" placeholder="الاسم الكامل">
+            <input id="uPass" type="password" placeholder="كلمة المرور" minlength="8" maxlength="72" autocomplete="new-password">
+          </div>
+          <div class="row">
+            <select id="uLevel" title="المستوى الوظيفي"></select>
+            <select id="uVis" title="نطاق الرؤية"></select>
+            <select id="uSites" multiple size="4" title="مواقع المحدّث (Ctrl للاختيار المتعدد)"></select>
+          </div>
+          <p id="userErr" class="err"></p>
+          <div class="row">
+            <button class="btn primary" id="uSave">حفظ المستخدم</button>
+            <button type="button" class="btn" id="uCancel">جديد</button>
+          </div>
+        </form>
+        <div id="userList" class="scroll"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="taskDialog">
+  <form method="dialog" id="taskForm" class="stack">
+    <h3>إسناد مهمة</h3>
+    <label>الموقع<select id="tSite"></select></label>
+    <label>الوحدة<select id="tUnit"></select></label>
+    <label>المسند إليه<select id="tWho"></select></label>
+    <label>النوع<select id="tKind"></select></label>
+    <label>العنوان (اختياري)<input id="tTitle" maxlength="200"></label>
+    <label>الموعد<input id="tDue" type="date"></label>
+    <label>ملاحظة<input id="tNote" maxlength="300"></label>
+    <p id="tErr" class="err"></p>
+    <div class="row"><button type="button" class="btn primary" id="tSave">إسناد</button><button type="button" class="btn" id="tCancel">إغلاق</button></div>
+  </form>
+</dialog>
+
+<dialog id="unitDialog">
+  <form method="dialog" id="unitForm" class="stack">
+    <h3 id="dlgTitle"></h3>
+    <div id="dlgStatuses" class="status-pick"></div>
+    <label>اسم المستأجر<input id="fTenant" maxlength="120"></label>
+    <label>تاريخ انتهاء العقد<input id="fEnd" type="date"></label>
+    <label>ملاحظة على التغيير (تُسجَّل في السجل)<input id="fNote" maxlength="300"></label>
+    <p id="dlgErr" class="err"></p>
+    <div class="row">
+      <button type="button" class="btn primary" id="dlgSave">حفظ</button>
+      <button type="button" class="btn" id="dlgCancel">إغلاق</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="authDialog" class="wide">
+  <form method="dialog" id="authForm" class="stack">
+    <h3 id="adTitle"></h3>
+    <div class="meta-grid">
+      <label>العنوان<input id="adTitleIn" maxlength="200"></label>
+      <label>الأولوية<select id="adPriority"></select></label>
+      <label>الموقع<select id="adSite"></select></label>
+      <label>الإدارة / القطاع<select id="adDept"></select></label>
+      <label>تاريخ التقرير<input id="adDate" type="date"></label>
+    </div>
+    <div id="adFields" class="stack"></div>
+    <div id="adMediaBox" class="fld hidden">
+      <span>المرفقات (صور وفيديو)</span>
+      <div id="adMediaGrid" class="mgrid small"></div>
+      <div><button type="button" class="btn small" id="adAttach">+ إرفاق صورة / فيديو</button></div>
+    </div>
+    <p id="adErr" class="err"></p>
+    <div class="row">
+      <button type="button" class="btn" id="adPdf">ملف PDF</button>
+      <button type="button" class="btn" id="adPrint">طباعة</button>
+      <button type="button" class="btn" id="adSave">حفظ كمسودة</button>
+      <button type="button" class="btn primary" id="adSubmit">إرسال التقرير</button>
+      <button type="button" class="btn danger" id="adDelete">حذف المسودة</button>
+      <button type="button" class="btn" id="adClose">إغلاق</button>
+    </div>
+  </form>
+</dialog>
+
+
+<dialog id="mvDialog" class="wide">
+  <form method="dialog" id="mvForm" class="stack">
+    <div id="mvPreview" class="mv-preview"></div>
+    <div class="meta-grid">
+      <label>التصنيف<select id="mvCat"></select></label>
+      <label>الموقع<select id="mvSite"></select></label>
+      <label>مرتبط بتقرير<select id="mvRep"></select></label>
+    </div>
+    <label>الوصف<input id="mvCap" maxlength="300"></label>
+    <p id="mvInfo" class="muted"></p>
+    <p id="mvErr" class="err"></p>
+    <div class="row">
+      <button type="button" class="btn primary" id="mvSave">حفظ</button>
+      <a class="btn" id="mvDl" download>تنزيل</a>
+      <button type="button" class="btn" id="mvRepOpen">فتح التقرير (PDF)</button>
+      <button type="button" class="btn danger" id="mvDel">حذف</button>
+      <button type="button" class="btn" id="mvClose">إغلاق</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="upDialog">
+  <form method="dialog" id="upForm" class="stack">
+    <h3>رفع إلى مكتبة الوسائط</h3>
+    <label>الملفات<input type="file" id="upFiles" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"></label>
+    <label>التصنيف<select id="upCat"></select></label>
+    <label>الوصف (اختياري)<input id="upCap" maxlength="300"></label>
+    <label>الموقع (اختياري)<select id="upSite"></select></label>
+    <p id="upInfo" class="muted"></p>
+    <div id="upProg" class="upprog"></div>
+    <p id="upErr" class="err"></p>
+    <div class="row">
+      <button type="button" class="btn primary" id="upGo">رفع</button>
+      <button type="button" class="btn" id="upClose">إغلاق</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="mcMove">
+  <form method="dialog" class="stack">
+    <h3>حذف تصنيف يحتوي ملفات</h3>
+    <p id="mcMoveMsg" class="muted"></p>
+    <label>انقل الملفات إلى<select id="mcMoveTo"></select></label>
+    <div class="row">
+      <button type="button" class="btn danger" id="mcMoveGo">نقل ثم حذف</button>
+      <button type="button" class="btn" id="mcMoveCancel">إلغاء</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/icons.js?v=0.3.4"></script>
+<script src="/app.js?v=0.3.4"></script>
+</body>
+</html>
